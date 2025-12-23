@@ -1,0 +1,8 @@
+{
+  "name": "SnipTranslate AI",
+  "description": "An AI-powered screen snipping and translation tool using Gemini 2.5 Flash for OCR and translation.",
+  "requestFramePermissions": [
+    "camera",
+    "display-capture"
+  ]
+}
