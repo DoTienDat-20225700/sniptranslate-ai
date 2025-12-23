@@ -1,35 +1,48 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ImagePanel } from './components/ImagePanel';
 import { TextPanel } from './components/TextPanel';
 import { SettingsModal } from './components/SettingsModal';
 import { HistoryModal } from './components/HistoryModal';
 import { ScreenCropper } from './components/ScreenCropper';
+import { SourceSelector } from './components/SourceSelector';
 import { extractTextFromImage, translateText } from './services/geminiService';
 import { Sparkles } from 'lucide-react';
 import { AppSettings, HistoryItem } from './types';
 
+// Khai báo interface cho API Electron
+declare global {
+  interface Window {
+    electronAPI?: {
+      getScreenSources: () => Promise<any[]>;
+    };
+  }
+}
+
 const App: React.FC = () => {
-  // Application State
+  // --- Application State ---
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
   const [translatedText, setTranslatedText] = useState<string>("");
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
 
-  // Snip & Crop State
+  // --- Source Selection State ---
+  const [showSourceSelector, setShowSourceSelector] = useState(false);
+  const [availableSources, setAvailableSources] = useState<any[]>([]);
+
+  // --- Snip & Crop State ---
   const [tempScreenshot, setTempScreenshot] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState(false);
 
-  // History State
+  // --- History State ---
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Settings State
+  // --- Settings State ---
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
-    aiModel: 'gemini-2.5-flash',
+    aiModel: 'gemini-1.5-flash-latest',
     targetLanguage: 'Vietnamese',
     autoTranslate: true,
     darkMode: false,
@@ -37,7 +50,8 @@ const App: React.FC = () => {
     fontSize: 16
   });
 
-  // Handle Translation
+  // --- Handlers ---
+
   const handleTranslate = useCallback(async (text: string) => {
     if (!text) return;
     
@@ -53,7 +67,6 @@ const App: React.FC = () => {
     }
   }, [settings]);
 
-  // Handle OCR
   const performOCR = useCallback(async (base64Img: string) => {
     if (!base64Img) return;
     
@@ -62,29 +75,42 @@ const App: React.FC = () => {
     setTranslatedText(""); 
     
     try {
+      // 1. OCR: Trích xuất văn bản từ ảnh
       const text = await extractTextFromImage(base64Img, settings.aiModel);
       setExtractedText(text);
 
-      // Add to History
+      let finalTranslatedText = "";
+
+      // 2. Dịch: Nếu bật autoTranslate, thực hiện dịch ngay lập tức
+      if (text && settings.autoTranslate) {
+        setIsTranslating(true);
+        try {
+          finalTranslatedText = await translateText(text, settings.targetLanguage, settings.aiModel);
+          setTranslatedText(finalTranslatedText);
+        } catch (error) {
+          console.error("Auto-translate error:", error);
+        } finally {
+          setIsTranslating(false);
+        }
+      }
+
+      // 3. Lưu lịch sử: Lưu cả extractedText và finalTranslatedText vào history
       const newItem: HistoryItem = {
         id: crypto.randomUUID(),
         imageSrc: base64Img,
         extractedText: text,
-        translatedText: "", 
+        translatedText: finalTranslatedText, // Lưu kết quả dịch (nếu có)
         timestamp: Date.now()
       };
       setHistory(prev => [newItem, ...prev]);
 
-      if (text && settings.autoTranslate) {
-        await handleTranslate(text);
-      }
     } catch (error) {
       console.error("OCR Error:", error);
       alert("Failed to extract text. Please try again.");
     } finally {
       setIsProcessingOCR(false);
     }
-  }, [settings, handleTranslate]);
+  }, [settings]); // Không cần dependency handleTranslate ở đây để tránh loop
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -96,100 +122,84 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSnipScreen = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      alert("Screen capture is not supported in this browser.");
+  const handleSnipScreen = useCallback(async () => {
+    if (!window.electronAPI) {
+      alert("Tính năng này chỉ hoạt động trên Desktop App (Electron)!");
       return;
     }
 
-    let stream: MediaStream | null = null;
-    let video: HTMLVideoElement | null = null;
-    let canvas: HTMLCanvasElement | null = null;
+    try {
+      const sources = await window.electronAPI.getScreenSources();
+      setAvailableSources(sources);
+      setShowSourceSelector(true);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách cửa sổ:", error);
+      alert("Không thể lấy danh sách cửa sổ.");
+    }
+  }, []);
+
+  const handleSourceSelect = async (sourceId: string) => {
+    setShowSourceSelector(false);
 
     try {
-      // 1. Capture the full screen/window
-      stream = await navigator.mediaDevices.getDisplayMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
         video: {
-            // @ts-ignore - 'cursor' property is not in standard lib types yet but supported
-            cursor: "never" 
-        },
-        audio: false
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: sourceId,
+            minWidth: 1280,
+            maxWidth: 4000,
+            minHeight: 720,
+            maxHeight: 4000
+          }
+        } as any
       });
-      
-      video = document.createElement('video');
-      video.style.position = 'fixed';
-      // Use opacity 0 instead of far off-screen to ensure some browsers still render frames
-      video.style.opacity = '0';
-      video.style.pointerEvents = 'none';
-      video.style.zIndex = '-10';
-      video.style.left = '0';
-      video.style.top = '0';
-      
+
+      // Tạo video element ẩn để lấy frame
+      const video = document.createElement('video');
+      // Thêm zIndex cao để đảm bảo không bị che khuất gây lỗi màn hình đen
+      video.style.cssText = "position:fixed; top:-10000px; left:0; width:1px; height:1px; opacity:0; z-index:9999;";
       document.body.appendChild(video);
-
-      video.srcObject = stream;
-      video.autoplay = true;
-      video.muted = true;
-      video.playsInline = true;
       
-      await new Promise<void>((resolve, reject) => {
-        if (!video) return reject("Video element missing");
-        video.onloadeddata = () => resolve();
-        video.onerror = (e) => reject(e);
-        // Timeout if video never loads
-        setTimeout(() => reject(new Error("Video load timeout")), 5000);
+      video.srcObject = stream;
+      await video.play();
+
+      // Đợi video load metadata và sẵn sàng
+      await new Promise<void>(r => {
+        if (video.readyState >= 2) r();
+        else video.onloadedmetadata = () => r();
       });
       
-      // Wait a bit for the frame to stabilize
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/png');
-          
-          // 2. Instead of processing immediately, open the Cropper
-          setTempScreenshot(dataUrl);
-          setIsCropping(true);
-        }
-      }
+      // Chờ thêm 300ms để hình ảnh ổn định (tránh lỗi đen/nhấp nháy khi chụp cửa sổ)
+      await new Promise(r => setTimeout(r, 300));
 
-    } catch (err: any) {
-      // Gracefully handle user cancellation (Permission denied)
-      const errorMsg = err?.message || '';
-      const errorName = err?.name || '';
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
       
-      if (
-        errorName === 'NotAllowedError' || 
-        errorMsg.includes('Permission denied') || 
-        errorMsg.includes('denied by user')
-      ) {
-        console.log("Screen capture cancelled by user.");
-        return; // Exit silently
-      }
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // Dọn dẹp
+      stream.getTracks().forEach(t => t.stop());
+      video.remove();
+      canvas.remove();
 
-      console.error("Error capturing screen:", err);
-      alert("Failed to capture screen. Please try again.");
-    } finally {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (video) {
-        video.srcObject = null;
-        if (document.body.contains(video)) {
-          document.body.removeChild(video);
-        }
-      }
-      if (canvas) {
-        canvas.remove();
-      }
+      setTempScreenshot(dataUrl);
+      setIsCropping(true);
+
+    } catch (err) {
+      console.error("Lỗi chụp:", err);
+      alert("Không thể chụp cửa sổ này.");
     }
   };
+
+  const handleCropCancel = useCallback(() => {
+    setIsCropping(false);
+    setTempScreenshot(null);
+  }, []);
 
   const handleCropComplete = (croppedImage: string) => {
     setIsCropping(false);
@@ -198,15 +208,10 @@ const App: React.FC = () => {
     performOCR(croppedImage);
   };
 
-  const handleCropCancel = () => {
-    setIsCropping(false);
-    setTempScreenshot(null);
-  };
-
   const handleHistorySelect = (item: HistoryItem) => {
     setImageSrc(item.imageSrc);
     setExtractedText(item.extractedText);
-    setTranslatedText(item.translatedText);
+    setTranslatedText(item.translatedText); // Bây giờ item.translatedText sẽ có dữ liệu
   };
 
   const handleHistoryDelete = (id: string) => {
@@ -217,12 +222,36 @@ const App: React.FC = () => {
     navigator.clipboard.writeText(text);
   };
 
+  // --- Effects ---
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + Shift + S: Chụp màn hình
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyS') {
+        e.preventDefault();
+        handleSnipScreen();
+      }
+
+      // ESC: Đóng các modal
+      if (e.code === 'Escape') {
+         if (showSourceSelector) setShowSourceSelector(false);
+         if (isCropping) handleCropCancel();
+         if (showSettings) setShowSettings(false);
+         if (showHistory) setShowHistory(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSnipScreen, showSourceSelector, isCropping, handleCropCancel, showSettings, showHistory]);
+
   return (
     <div className={`min-h-screen flex flex-col ${settings.darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
       <Header 
         onSnipScreen={handleSnipScreen} 
         onOpenSettings={() => setShowSettings(true)}
         onOpenHistory={() => setShowHistory(true)}
+        darkMode={settings.darkMode} 
       />
 
       <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6">
@@ -234,6 +263,7 @@ const App: React.FC = () => {
               imageSrc={imageSrc} 
               onImageUpload={handleImageUpload}
               onNewSnip={handleSnipScreen}
+              darkMode={settings.darkMode} 
             />
           </div>
 
@@ -247,7 +277,7 @@ const App: React.FC = () => {
               onCopy={() => copyToClipboard(extractedText)}
               onRefresh={() => imageSrc && performOCR(imageSrc)}
               refreshLabel="Re-extract"
-              settings={settings}
+              settings={settings} 
             />
           </div>
 
@@ -262,7 +292,7 @@ const App: React.FC = () => {
               onRefresh={() => handleTranslate(extractedText)}
               refreshLabel="Re-Translate"
               actionIcon={<Sparkles />}
-              settings={settings}
+              settings={settings} 
             />
           </div>
 
@@ -277,6 +307,14 @@ const App: React.FC = () => {
           onCancel={handleCropCancel}
         />
       )}
+
+      <SourceSelector
+        isOpen={showSourceSelector}
+        sources={availableSources}
+        onSelect={handleSourceSelect}
+        onCancel={() => setShowSourceSelector(false)}
+        darkMode={settings.darkMode} 
+      />
 
       <SettingsModal 
         isOpen={showSettings} 
