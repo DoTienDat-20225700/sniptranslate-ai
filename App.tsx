@@ -42,7 +42,7 @@ const App: React.FC = () => {
   // --- Settings State ---
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
-    aiModel: 'gemini-2.0-flash-exp',
+    aiModel: 'gemini-2.5-flash', // <--- SỬA THÀNH: gemini-2.5-flash
     targetLanguage: 'Vietnamese',
     autoTranslate: true,
     darkMode: false,
@@ -94,12 +94,12 @@ const App: React.FC = () => {
         }
       }
 
-      // 3. Lưu lịch sử: Lưu cả extractedText và finalTranslatedText vào history
+      // 3. Lưu lịch sử
       const newItem: HistoryItem = {
         id: crypto.randomUUID(),
         imageSrc: base64Img,
         extractedText: text,
-        translatedText: finalTranslatedText, // Lưu kết quả dịch (nếu có)
+        translatedText: finalTranslatedText,
         timestamp: Date.now()
       };
       setHistory(prev => [newItem, ...prev]);
@@ -110,7 +110,7 @@ const App: React.FC = () => {
     } finally {
       setIsProcessingOCR(false);
     }
-  }, [settings]); // Không cần dependency handleTranslate ở đây để tránh loop
+  }, [settings]);
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -156,22 +156,18 @@ const App: React.FC = () => {
         } as any
       });
 
-      // Tạo video element ẩn để lấy frame
       const video = document.createElement('video');
-      // Thêm zIndex cao để đảm bảo không bị che khuất gây lỗi màn hình đen
       video.style.cssText = "position:fixed; top:-10000px; left:0; width:1px; height:1px; opacity:0; z-index:9999;";
       document.body.appendChild(video);
       
       video.srcObject = stream;
       await video.play();
 
-      // Đợi video load metadata và sẵn sàng
       await new Promise<void>(r => {
         if (video.readyState >= 2) r();
         else video.onloadedmetadata = () => r();
       });
       
-      // Chờ thêm 300ms để hình ảnh ổn định (tránh lỗi đen/nhấp nháy khi chụp cửa sổ)
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = document.createElement('canvas');
@@ -182,7 +178,6 @@ const App: React.FC = () => {
       
       const dataUrl = canvas.toDataURL('image/png');
       
-      // Dọn dẹp
       stream.getTracks().forEach(t => t.stop());
       video.remove();
       canvas.remove();
@@ -211,7 +206,7 @@ const App: React.FC = () => {
   const handleHistorySelect = (item: HistoryItem) => {
     setImageSrc(item.imageSrc);
     setExtractedText(item.extractedText);
-    setTranslatedText(item.translatedText); // Bây giờ item.translatedText sẽ có dữ liệu
+    setTranslatedText(item.translatedText);
   };
 
   const handleHistoryDelete = (id: string) => {
@@ -222,17 +217,12 @@ const App: React.FC = () => {
     navigator.clipboard.writeText(text);
   };
 
-  // --- Effects ---
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + Shift + S: Chụp màn hình
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyS') {
         e.preventDefault();
         handleSnipScreen();
       }
-
-      // ESC: Đóng các modal
       if (e.code === 'Escape') {
          if (showSourceSelector) setShowSourceSelector(false);
          if (isCropping) handleCropCancel();
