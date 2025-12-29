@@ -3,7 +3,7 @@ const API_VERSION = "v1beta";
 const BASE_URL = `https://generativelanguage.googleapis.com/${API_VERSION}`;
 
 /**
- * Gọi Gemini qua REST API để tránh lỗi thư viện SDK
+ * Gọi Gemini qua REST API
  */
 async function callGeminiAPI(modelName: string, contents: any[]) {
   if (!API_KEY) throw new Error("Missing Gemini API Key");
@@ -18,7 +18,7 @@ async function callGeminiAPI(modelName: string, contents: any[]) {
     body: JSON.stringify({
       contents: contents,
       generationConfig: {
-        temperature: 0.4,
+        temperature: 0.3, // Giảm nhiệt độ để AI tập trung chính xác hơn
         maxOutputTokens: 2048,
       }
     })
@@ -27,8 +27,6 @@ async function callGeminiAPI(modelName: string, contents: any[]) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     console.error("Gemini API Error:", errorData);
-    
-    // Ném lỗi chi tiết
     throw new Error(
       errorData.error?.message || 
       `API Error: ${response.status} ${response.statusText}`
@@ -40,7 +38,7 @@ async function callGeminiAPI(modelName: string, contents: any[]) {
 }
 
 /**
- * OCR: Trích xuất chữ từ ảnh
+ * OCR: Trích xuất chữ từ ảnh (Hỗ trợ đa ngôn ngữ)
  */
 export const extractTextFromImage = async (base64Image: string, modelName: string = 'gemini-2.5-flash'): Promise<string> => {
   try {
@@ -55,7 +53,8 @@ export const extractTextFromImage = async (base64Image: string, modelName: strin
             data: cleanBase64
           }
         },
-        { text: "Extract all text from this image. Keep the layout." }
+        // Prompt mới: Yêu cầu nhận diện mọi ngôn ngữ có trong ảnh
+        { text: "OCR Task: Extract ALL text visible in this image exactly as it appears. The image may contain MULTIPLE languages mixed together (e.g., English, Japanese, Vietnamese). Identify and transcribe all of them in their original scripts. Do not translate anything yet. Preserve the line breaks." }
       ]
     }];
 
@@ -67,7 +66,7 @@ export const extractTextFromImage = async (base64Image: string, modelName: strin
 };
 
 /**
- * Dịch thuật
+ * Dịch thuật (Xử lý hỗn hợp ngôn ngữ)
  */
 export const translateText = async (text: string, targetLanguage: string = "Vietnamese", modelName: string = 'gemini-2.5-flash'): Promise<string> => {
   if (!text.trim()) return "";
@@ -76,7 +75,8 @@ export const translateText = async (text: string, targetLanguage: string = "Viet
     const contents = [{
       role: "user",
       parts: [{
-        text: `Translate the following text to ${targetLanguage}. Return ONLY the translation:\n\n${text}`
+        // Prompt mới: Ép buộc dịch TOÀN BỘ sang ngôn ngữ đích
+        text: `Translate the following text into ${targetLanguage}. \n\nIMPORTANT INSTRUCTIONS:\n1. The input text may contain multiple different source languages mixed together.\n2. Translate EVERYTHING into ${targetLanguage}.\n3. Do not leave any text in the original language unless it is a proper noun or specific technical term.\n4. Return ONLY the final translated result.\n\nInput Text:\n${text}`
       }]
     }];
 
