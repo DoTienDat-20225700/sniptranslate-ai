@@ -56,9 +56,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) => handleChange('aiModel', e.target.value)}
                   className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Free)</option>
-                  <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fastest)</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (High Quality - May hit limit)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Experimental)</option>
+                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Newest Public)</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Backup Stable)</option>
                 </select>
               </div>
 
