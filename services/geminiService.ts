@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY || "");
 /**
  * Extracts text from a base64 encoded image using Gemini.
  */
-export const extractTextFromImage = async (base64Image: string, modelName: string = 'gemini-1.5-flash-latest'): Promise<string> => {
+export const extractTextFromImage = async (base64Image: string, modelName: string = 'gemini-2.0-flash-exp'): Promise<string> => {
   try {
     // Xóa prefix data URL nếu có
     const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
@@ -34,7 +34,7 @@ export const extractTextFromImage = async (base64Image: string, modelName: strin
 /**
  * Translates text to the target language.
  */
-export const translateText = async (text: string, targetLanguage: string = "Vietnamese", modelName: string = 'gemini-1.5-flash-latest'): Promise<string> => {
+export const translateText = async (text: string, targetLanguage: string = "Vietnamese", modelName: string = 'gemini-2.0-flash-exp'): Promise<string> => {
   if (!text.trim()) return "";
 
   try {

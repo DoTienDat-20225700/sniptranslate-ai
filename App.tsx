@@ -42,7 +42,7 @@ const App: React.FC = () => {
   // --- Settings State ---
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
-    aiModel: 'gemini-1.5-flash-latest',
+    aiModel: 'gemini-2.0-flash-exp',
     targetLanguage: 'Vietnamese',
     autoTranslate: true,
     darkMode: false,
