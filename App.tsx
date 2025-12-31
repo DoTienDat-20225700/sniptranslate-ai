@@ -352,8 +352,8 @@ const App: React.FC = () => {
       </main>
       {isCropping && tempScreenshot && <ScreenCropper imageSrc={tempScreenshot} onComplete={handleCropComplete} onCancel={handleCropCancel} />}
       <SourceSelector isOpen={showSourceSelector} sources={availableSources} onSelect={handleSourceSelect} onCancel={() => setShowSourceSelector(false)} darkMode={settings.darkMode} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} settings={settings} onSettingsChange={setSettings} />
-      <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={history} onSelect={handleHistorySelect} onDelete={handleHistoryDelete} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} settings={settings} onSettingsChange={setSettings} darkMode={settings.darkMode} />
+      <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} history={history} onSelect={handleHistorySelect} onDelete={handleHistoryDelete} darkMode={settings.darkMode} />
     </div>
   );
 };

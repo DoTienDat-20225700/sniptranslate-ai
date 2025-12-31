@@ -22,8 +22,8 @@ function createWindow() {
   const isDev = !app.isPackaged;
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000');
-    // Mở DevTools để debug
-    mainWindow.webContents.openDevTools();
+    // DevTools disabled - uncomment to debug
+    // mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }

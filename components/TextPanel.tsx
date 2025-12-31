@@ -65,17 +65,17 @@ export const TextPanel: React.FC<TextPanelProps> = ({
           placeholder={placeholder || "Text will appear here..."}
           value={text}
           readOnly={readonly}
-          onChange={() => {}}
+          onChange={() => { }}
         />
-        
+
         {/* Floating Action Buttons */}
         {actionIcon && text.length > 0 && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-             <button className={`shadow-md border p-2 rounded-full transition-transform hover:scale-110
+            <button className={`shadow-md border p-2 rounded-full transition-transform hover:scale-110
                ${isDark ? 'bg-gray-700 border-gray-600 text-blue-400' : 'bg-white border-gray-100 text-blue-500'}`
-             }>
-               <Sparkles size={16} />
-             </button>
+            }>
+              <Sparkles size={16} />
+            </button>
           </div>
         )}
       </div>
@@ -84,21 +84,23 @@ export const TextPanel: React.FC<TextPanelProps> = ({
         ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`
       }>
         <div className="flex gap-3">
-          <Button 
-            variant="primary" 
-            className="flex-1" 
+          <Button
+            variant="primary"
+            className="flex-1"
             icon={<Copy size={16} />}
             onClick={onCopy}
             disabled={!text}
+            darkMode={isDark}
           >
             Copy
           </Button>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             className="flex-1"
             icon={<RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />}
             onClick={onRefresh}
             disabled={isLoading || (!text && refreshLabel !== "Re-extract")}
+            darkMode={isDark}
           >
             {refreshLabel}
           </Button>
