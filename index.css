@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* --- LIGHT MODE (Mặc định) --- */
+    --bg-app: #f3f4f6;
+    /* Nền tổng thể (xám nhạt) */
+    --bg-panel: #ffffff;
+    /* Nền các khung/thẻ */
+    --bg-header: #ffffff;
+    /* Nền header */
+    --text-primary: #111827;
+    /* Chữ chính (đen) */
+    --text-secondary: #4b5563;
+    /* Chữ phụ (xám) */
+    --border-color: #e5e7eb;
+    /* Màu viền */
+
+    /* Brand Color (Xanh tím than - Dùng cho nút Snip) */
+    --color-brand: #4f46e5;
+    --color-brand-hover: #4338ca;
+    --text-on-brand: #ffffff;
+
+    /* Status Colors (THÊM MỚI: Dùng cho nút Live Mode) */
+    --color-success: #10b981;
+    /* Emerald-500 (Xanh lá) */
+    --color-success-hover: #059669;
+    /* Emerald-600 */
+
+    --color-danger: #ef4444;
+    /* Red-500 (Đỏ) */
+    --color-danger-hover: #dc2626;
+    /* Red-600 */
+
+    /* Button Secondary */
+    --btn-sec-bg: #ffffff;
+    --btn-sec-text: #374151;
+    --btn-sec-border: #d1d5db;
+    --btn-sec-hover: #f9fafb;
+
+    /* Shadow */
+    --shadow-panel: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+/* --- DARK MODE SETTINGS --- */
+[data-theme="dark"] {
+    --bg-app: #0f172a;
+    /* Xanh đen sâu */
+    --bg-panel: #1e293b;
+    /* Xám xanh đậm */
+    --bg-header: #1e293b;
+    --text-primary: #f3f4f6;
+    /* Trắng xám */
+    --text-secondary: #9ca3af;
+    --border-color: #334155;
+
+    /* Brand Color Dark */
+    --color-brand: #6366f1;
+    --color-brand-hover: #818cf8;
+
+    /* Status Colors Dark */
+    --color-success: #10b981;
+    --color-success-hover: #34d399;
+
+    --color-danger: #ef4444;
+    --color-danger-hover: #f87171;
+
+    /* Button Secondary Dark */
+    --btn-sec-bg: #1e293b;
+    --btn-sec-text: #e2e8f0;
+    --btn-sec-border: #475569;
+    --btn-sec-hover: #334155;
+}
+
+body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Class tiện ích để dùng trong code React */
+.bg-theme-panel {
+    background-color: var(--bg-panel);
+}
+
+.border-theme {
+    border-color: var(--border-color);
+}
+
+.text-theme-primary {
+    color: var(--text-primary);
+}
+
+.text-theme-secondary {
+    color: var(--text-secondary);
+}

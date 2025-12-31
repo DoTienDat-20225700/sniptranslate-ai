@@ -7,7 +7,7 @@ import { HistoryModal } from './components/HistoryModal';
 import { ScreenCropper } from './components/ScreenCropper';
 import { SourceSelector } from './components/SourceSelector';
 
-// Import service
+// Import services
 import { extractTextFromImage, translateText as translateWithGemini } from './services/geminiService';
 import { performLocalOCR } from './services/paddleOCRService';
 import { translateWithGoogleFree } from './services/googleTranslate';
@@ -65,6 +65,15 @@ const App: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastProcessedTextRef = useRef<string>('');
 
+  // --- EFFECT: Xử lý Dark Mode toàn cục ---
+  useEffect(() => {
+    if (settings.darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }, [settings.darkMode]);
+
   // --- Handlers ---
   const handleTranslate = useCallback(async (text: string) => {
     if (!text) return;
@@ -86,29 +95,21 @@ const App: React.FC = () => {
 
     try {
       let text = "";
-      let usedFallback = false; // Track if we used PaddleOCR fallback
+      let usedFallback = false;
 
       if (forceLocal) {
-        // Live Mode -> PaddleOCR (fast, for real-time video)
         text = await performLocalOCR(base64Img, 'eng+vie');
       } else {
-        // Snip Mode -> Gemini OCR (high quality, accurate)
         try {
           text = await extractTextFromImage(base64Img, settings.aiModel);
         } catch (err: any) {
           const errorMessage = err?.message || String(err);
-
-          // Check if it's a quota error
-          if (errorMessage.includes('quota') || errorMessage.includes('429') || errorMessage.includes('exceeded')) {
+          if (errorMessage.includes('quota') || errorMessage.includes('429')) {
             console.warn("⚠️ Gemini quota exceeded, falling back to PaddleOCR");
-            alert('⚠️ Gemini API quota exceeded!\n\nAutomatically switching to PaddleOCR (free).\nTranslation will use Google Translate.');
-          } else {
-            console.error("Gemini OCR Failed, fallback to PaddleOCR", err);
+            // Có thể thêm toast notification ở đây
           }
-
-          // Fallback to PaddleOCR
           text = await performLocalOCR(base64Img, 'eng+vie');
-          usedFallback = true; // Mark that we used fallback
+          usedFallback = true;
         }
       }
 
@@ -120,22 +121,18 @@ const App: React.FC = () => {
 
       let finalTranslatedText = "";
       if (text && settings.autoTranslate) {
-        // Skip translation if text hasn't changed (live mode deduplication)
         if (forceLocal && text === lastProcessedTextRef.current) {
-          console.log('[Live Mode] Text unchanged, skipping translation');
-          return; // Don't translate same text again
+          return;
         }
 
         if (addToHistory) setIsTranslating(true);
         try {
-          // If we used PaddleOCR fallback, also use Google Translate (free)
           if (usedFallback || forceLocal) {
             finalTranslatedText = await translateWithGoogleFree(text, settings.targetLanguage);
             if (forceLocal) {
-              lastProcessedTextRef.current = text; // Cache for next comparison
+              lastProcessedTextRef.current = text;
             }
           } else {
-            // Snip Mode with Gemini success -> Use Gemini translate
             finalTranslatedText = await translateWithGemini(text, settings.targetLanguage, settings.aiModel);
           }
           setTranslatedText(finalTranslatedText);
@@ -163,22 +160,17 @@ const App: React.FC = () => {
     }
   }, [settings]);
 
-  // --- LIVE LOOP: OPTIMIZED FOR PADDLEOCR ---
+  // --- LIVE LOOP ---
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
-
     if (isLive && videoRef.current && liveCropRegion) {
-      console.log("🟢 Live Mode: ON (PaddleOCR)");
-
       const captureAndProcess = async () => {
         if (!videoRef.current || !liveCropRegion) return;
-
         const video = videoRef.current;
         if (video.paused) await video.play().catch(console.error);
         if (video.readyState < 2 || video.videoWidth === 0) return;
 
         const canvas = document.createElement('canvas');
-
         const sX = liveCropRegion.x * video.videoWidth;
         const sY = liveCropRegion.y * video.videoHeight;
         const sW = liveCropRegion.width * video.videoWidth;
@@ -186,42 +178,32 @@ const App: React.FC = () => {
 
         if (sW <= 0 || sH <= 0) return;
 
-        // PaddleOCR handles preprocessing well, so we can simplify
-        // Upscale for better quality
         canvas.width = sW * 2;
         canvas.height = sH * 2;
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.imageSmoothingEnabled = true; // Better quality for upscaling
+          ctx.imageSmoothingEnabled = true;
           ctx.drawImage(video, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
-
-          // Optional: Light preprocessing (PaddleOCR handles most cases)
-          // Can add contrast enhancement if needed for specific use cases
-
           const dataUrl = canvas.toDataURL('image/png');
           setImageSrc(dataUrl);
-
-          // Use PaddleOCR for all modes (faster and more accurate)
           await performOCR(dataUrl, false, true);
         }
         canvas.remove();
       };
 
       captureAndProcess();
-      // Reduced interval: PaddleOCR is faster than Tesseract
-      intervalId = setInterval(captureAndProcess, 1000); // 1s instead of 2s
+      intervalId = setInterval(captureAndProcess, 1000);
     }
-
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
   }, [isLive, liveCropRegion, performOCR]);
 
-  // --- Các hàm khác giữ nguyên ---
+  // --- Stop & Clean up Live Mode ---
   const stopLiveMode = useCallback(() => {
     setIsLive(false); setIsLiveSetup(false); setLiveSourceId(null); setLiveCropRegion(null);
-    lastProcessedTextRef.current = ''; // Reset translation cache
+    lastProcessedTextRef.current = '';
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (videoRef.current) { videoRef.current.remove(); videoRef.current = null; }
   }, []);
@@ -308,48 +290,61 @@ const App: React.FC = () => {
   const handleHistoryDelete = (id: string) => setHistory(prev => prev.filter(item => item.id !== id));
   const copyToClipboard = (text: string) => navigator.clipboard.writeText(text);
 
-  useEffect(() => {
-    return () => stopLiveMode();
-  }, [stopLiveMode]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyS') { e.preventDefault(); handleSnipScreen(); }
-      if (e.code === 'Escape') {
-        if (showSourceSelector) setShowSourceSelector(false);
-        if (isCropping) handleCropCancel();
-        if (showSettings) setShowSettings(false);
-        if (showHistory) setShowHistory(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSnipScreen, showSourceSelector, isCropping, handleCropCancel, showSettings, showHistory]);
-
+  // --- UI RENDER ---
+  // Lưu ý: Không còn hardcode bg-gray-900 hay bg-gray-50 nữa. Màu nền sẽ do <body> (cấu hình trong index.css) quản lý.
   return (
-    <div className={`min-h-screen flex flex-col ${settings.darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
+    <div className="min-h-screen flex flex-col transition-colors duration-300">
       <Header
         onSnipScreen={handleSnipScreen}
         onLiveMode={handleToggleLiveMode}
         isLive={isLive}
         onOpenSettings={() => setShowSettings(true)}
         onOpenHistory={() => setShowHistory(true)}
-        darkMode={settings.darkMode}
       />
-      {isLive && <div className="bg-red-600 text-white text-center text-sm py-1 font-medium animate-pulse">🔴 LIVE MODE: PaddleOCR (ONNX) + Google Translate Free</div>}
+
+      {isLive && (
+        <div className="bg-red-600 text-white text-center text-xs py-1 font-bold tracking-wider animate-pulse uppercase shadow-md z-30">
+          🔴 Live Mode Active: PaddleOCR + Google Translate
+        </div>
+      )}
+
       <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
           <div className="h-full">
-            <ImagePanel imageSrc={imageSrc} onImageUpload={handleImageUpload} onNewSnip={handleSnipScreen} darkMode={settings.darkMode} />
+            <ImagePanel
+              imageSrc={imageSrc}
+              onImageUpload={handleImageUpload}
+              onNewSnip={handleSnipScreen}
+            />
           </div>
           <div className="h-full">
-            <TextPanel title="Extracted Text" placeholder="Text..." text={extractedText} isLoading={isProcessingOCR && !isLive} onCopy={() => copyToClipboard(extractedText)} onRefresh={() => imageSrc && performOCR(imageSrc, true, isLive)} refreshLabel="Re-scan" settings={settings} />
+            <TextPanel
+              title="Extracted Text"
+              placeholder="Waiting for text..."
+              text={extractedText}
+              isLoading={isProcessingOCR && !isLive}
+              onCopy={() => copyToClipboard(extractedText)}
+              onRefresh={() => imageSrc && performOCR(imageSrc, true, isLive)}
+              refreshLabel="Re-scan"
+              settings={settings}
+            />
           </div>
           <div className="h-full">
-            <TextPanel title={`Translation (${settings.targetLanguage})`} placeholder="Translation..." text={translatedText} isLoading={isTranslating && !isLive} onCopy={() => copyToClipboard(translatedText)} onRefresh={() => handleTranslate(extractedText)} refreshLabel="Re-Translate" actionIcon={<Sparkles />} settings={settings} />
+            <TextPanel
+              title={`Translation (${settings.targetLanguage})`}
+              placeholder="Translation result..."
+              text={translatedText}
+              isLoading={isTranslating && !isLive}
+              onCopy={() => copyToClipboard(translatedText)}
+              onRefresh={() => handleTranslate(extractedText)}
+              refreshLabel="Re-Translate"
+              actionIcon={<Sparkles />}
+              settings={settings}
+            />
           </div>
         </div>
       </main>
+
       {isCropping && tempScreenshot && <ScreenCropper imageSrc={tempScreenshot} onComplete={handleCropComplete} onCancel={handleCropCancel} />}
       <SourceSelector isOpen={showSourceSelector} sources={availableSources} onSelect={handleSourceSelect} onCancel={() => setShowSourceSelector(false)} darkMode={settings.darkMode} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} settings={settings} onSettingsChange={setSettings} darkMode={settings.darkMode} />

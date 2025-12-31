@@ -36,53 +36,47 @@ export const TextPanel: React.FC<TextPanelProps> = ({
     }
   };
 
-  const isDark = settings.darkMode; // Alias cho gọn
-
   return (
-    <div className={`rounded-xl border flex flex-col h-[calc(100vh-140px)] shadow-sm relative group transition-colors duration-200
-      ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`
-    }>
-      <div className={`p-4 border-b font-semibold flex justify-between items-center
-        ${isDark ? 'border-gray-700 text-gray-100' : 'border-gray-100 text-gray-900'}`
-      }>
-        {title}
+    <div className="rounded-xl border flex flex-col h-[calc(100vh-140px)] shadow-sm relative group transition-all duration-300 bg-theme-panel border-theme">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-theme flex justify-between items-center">
+        <h2 className="font-semibold text-sm uppercase tracking-wider text-theme-secondary flex items-center gap-2">
+          {actionIcon && <span className="text-[var(--color-brand)]">{actionIcon}</span>}
+          {title}
+        </h2>
         {isLoading && (
-          <span className="text-xs text-blue-400 bg-blue-900/30 px-2 py-1 rounded-full animate-pulse">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-brand)] text-white animate-pulse">
             Processing...
           </span>
         )}
       </div>
 
-      <div className="flex-1 relative">
+      {/* Text Content */}
+      <div className="flex-1 relative overflow-hidden">
         <textarea
-          className={`w-full h-full p-4 resize-none focus:outline-none leading-relaxed bg-transparent
-            ${isDark ? 'text-gray-200 placeholder-gray-600' : 'text-gray-700 placeholder-gray-400'}`
-          }
+          className="w-full h-full p-4 resize-none focus:outline-none bg-transparent text-theme-primary placeholder-gray-400 dark:placeholder-gray-600 leading-relaxed"
           style={{
             fontFamily: getFontFamily(),
             fontSize: `${settings.fontSize}px`
           }}
-          placeholder={placeholder || "Text will appear here..."}
+          placeholder={placeholder}
           value={text}
           readOnly={readonly}
           onChange={() => { }}
         />
 
-        {/* Floating Action Buttons */}
+        {/* Floating Action Button (Hiệu ứng hover) */}
         {actionIcon && text.length > 0 && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <button className={`shadow-md border p-2 rounded-full transition-transform hover:scale-110
-               ${isDark ? 'bg-gray-700 border-gray-600 text-blue-400' : 'bg-white border-gray-100 text-blue-500'}`
-            }>
+            <button className="shadow-lg border border-theme p-2 rounded-full transition-transform hover:scale-110 bg-theme-panel text-[var(--color-brand)]">
               <Sparkles size={16} />
             </button>
           </div>
         )}
       </div>
 
-      <div className={`p-4 border-t rounded-b-xl
-        ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`
-      }>
+      {/* Footer Actions */}
+      <div className="p-4 border-t border-theme rounded-b-xl bg-theme-panel">
         <div className="flex gap-3">
           <Button
             variant="primary"
@@ -90,7 +84,6 @@ export const TextPanel: React.FC<TextPanelProps> = ({
             icon={<Copy size={16} />}
             onClick={onCopy}
             disabled={!text}
-            darkMode={isDark}
           >
             Copy
           </Button>
@@ -99,8 +92,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({
             className="flex-1"
             icon={<RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />}
             onClick={onRefresh}
-            disabled={isLoading || (!text && refreshLabel !== "Re-extract")}
-            darkMode={isDark}
+            disabled={isLoading || !text}
           >
             {refreshLabel}
           </Button>

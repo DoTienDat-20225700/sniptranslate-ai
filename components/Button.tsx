@@ -1,10 +1,9 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success'; // Thêm 'success'
   icon?: React.ReactNode;
   fullWidth?: boolean;
-  darkMode?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -13,33 +12,54 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   className = '',
   fullWidth = false,
-  darkMode = false,
+  style,
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-offset-1";
+  const baseStyles = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed";
 
-  // Dark mode aware variants
-  const variants = {
-    primary: darkMode
-      ? "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-sm"
-      : "bg-blue-700 hover:bg-blue-800 text-white focus:ring-blue-500 shadow-sm",
-    secondary: darkMode
-      ? "bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 shadow-sm focus:ring-gray-500"
-      : "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm focus:ring-gray-200",
-    outline: darkMode
-      ? "bg-transparent border border-blue-500 text-blue-400 hover:bg-blue-900/30 focus:ring-blue-500"
-      : "bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500",
-    ghost: darkMode
-      ? "bg-transparent hover:bg-gray-700 text-gray-300"
-      : "bg-transparent hover:bg-gray-100 text-gray-600"
+  const variantStyles = {
+    primary: {
+      backgroundColor: 'var(--color-brand)',
+      color: 'white',
+      border: '1px solid transparent',
+    },
+    secondary: {
+      backgroundColor: 'var(--btn-sec-bg)',
+      color: 'var(--btn-sec-text)',
+      border: '1px solid var(--btn-sec-border)',
+      boxShadow: 'var(--shadow-panel)'
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      border: '1px solid var(--color-brand)',
+      color: 'var(--color-brand)',
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      color: 'var(--text-secondary)',
+      border: '1px solid transparent'
+    },
+    // Nút Đỏ (Dừng / Nguy hiểm)
+    danger: {
+      backgroundColor: 'var(--color-danger)',
+      color: 'white',
+      border: '1px solid transparent',
+    },
+    // Nút Xanh Lá (Thành công / Bắt đầu)
+    success: {
+      backgroundColor: 'var(--color-success)',
+      color: 'white',
+      border: '1px solid transparent',
+    }
   };
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className} disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`${baseStyles} ${fullWidth ? 'w-full' : ''} ${className}`}
+      style={{ ...variantStyles[variant], ...style }}
       {...props}
     >
-      {icon}
+      {icon && <span>{icon}</span>}
       {children}
     </button>
   );
