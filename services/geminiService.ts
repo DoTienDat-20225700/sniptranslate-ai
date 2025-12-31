@@ -1,5 +1,5 @@
 const API_KEY = process.env.API_KEY || "";
-const API_VERSION = "v1beta"; 
+const API_VERSION = "v1beta"; // v1beta supports latest gemini-2.5 models
 const BASE_URL = `https://generativelanguage.googleapis.com/${API_VERSION}`;
 
 async function callGeminiAPI(modelName: string, contents: any[]) {
@@ -7,9 +7,9 @@ async function callGeminiAPI(modelName: string, contents: any[]) {
 
   // Xử lý tên model để tránh lỗi đường dẫn
   const cleanModelName = modelName.replace(/^models\//, '').trim();
-  
+
   const url = `${BASE_URL}/models/${cleanModelName}:generateContent?key=${API_KEY}`;
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -25,11 +25,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
           >
@@ -39,26 +39,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-8">
-          
+
           {/* Section 1: AI & Translation */}
           <section>
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
               AI & Translation Settings
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   AI Model
                 </label>
-                <select 
+                <select
                   value={settings.aiModel}
                   onChange={(e) => handleChange('aiModel', e.target.value)}
                   className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Experimental)</option>
-                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Newest Public)</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Backup Stable)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Latest - Recommended)</option>
+                  <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Fast)</option>
+                  <option value="gemini-2.0-flash-thinking-exp">Gemini 2.0 Thinking (Advanced Reasoning)</option>
                 </select>
               </div>
 
@@ -66,7 +66,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Target Language
                 </label>
-                <select 
+                <select
                   value={settings.targetLanguage}
                   onChange={(e) => handleChange('targetLanguage', e.target.value)}
                   className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               <div className="flex items-center gap-3 pt-1">
-                <input 
+                <input
                   type="checkbox"
                   id="autoTranslate"
                   checked={settings.autoTranslate}
@@ -105,7 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <div className="space-y-5">
               <div className="flex items-center gap-3">
-                <input 
+                <input
                   type="checkbox"
                   id="darkMode"
                   checked={settings.darkMode}
@@ -121,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Font Type
                 </label>
-                <select 
+                <select
                   value={settings.fontType}
                   onChange={(e) => handleChange('fontType', e.target.value)}
                   className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -137,7 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Font Size</span>
                   <span className="text-gray-500 font-mono">{settings.fontSize}px</span>
                 </label>
-                <input 
+                <input
                   type="range"
                   min="12"
                   max="32"
@@ -153,9 +153,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
-           <Button variant="secondary" onClick={onClose} className="px-8">
-             Close
-           </Button>
+          <Button variant="secondary" onClick={onClose} className="px-8">
+            Close
+          </Button>
         </div>
 
       </div>

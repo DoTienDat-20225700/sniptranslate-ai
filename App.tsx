@@ -86,6 +86,7 @@ const App: React.FC = () => {
 
     try {
       let text = "";
+      let usedFallback = false; // Track if we used PaddleOCR fallback
 
       if (forceLocal) {
         // Live Mode -> PaddleOCR (fast, for real-time video)
@@ -94,9 +95,20 @@ const App: React.FC = () => {
         // Snip Mode -> Gemini OCR (high quality, accurate)
         try {
           text = await extractTextFromImage(base64Img, settings.aiModel);
-        } catch (err) {
-          console.error("Gemini OCR Failed, fallback to PaddleOCR", err);
+        } catch (err: any) {
+          const errorMessage = err?.message || String(err);
+
+          // Check if it's a quota error
+          if (errorMessage.includes('quota') || errorMessage.includes('429') || errorMessage.includes('exceeded')) {
+            console.warn("⚠️ Gemini quota exceeded, falling back to PaddleOCR");
+            alert('⚠️ Gemini API quota exceeded!\n\nAutomatically switching to PaddleOCR (free).\nTranslation will use Google Translate.');
+          } else {
+            console.error("Gemini OCR Failed, fallback to PaddleOCR", err);
+          }
+
+          // Fallback to PaddleOCR
           text = await performLocalOCR(base64Img, 'eng+vie');
+          usedFallback = true; // Mark that we used fallback
         }
       }
 
@@ -116,12 +128,14 @@ const App: React.FC = () => {
 
         if (addToHistory) setIsTranslating(true);
         try {
-          if (forceLocal) {
-            // Live Mode -> Google Free
+          // If we used PaddleOCR fallback, also use Google Translate (free)
+          if (usedFallback || forceLocal) {
             finalTranslatedText = await translateWithGoogleFree(text, settings.targetLanguage);
-            lastProcessedTextRef.current = text; // Cache for next comparison
+            if (forceLocal) {
+              lastProcessedTextRef.current = text; // Cache for next comparison
+            }
           } else {
-            // Snip Mode -> Gemini
+            // Snip Mode with Gemini success -> Use Gemini translate
             finalTranslatedText = await translateWithGemini(text, settings.targetLanguage, settings.aiModel);
           }
           setTranslatedText(finalTranslatedText);
