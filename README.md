@@ -6,6 +6,8 @@
 
 This contains everything you need to run your app locally.
 
+**OCR Engine:** PaddleOCR (ONNX Runtime) for fast and accurate multilingual text recognition.
+
 View your app in AI Studio: https://ai.studio/apps/drive/16uelLOGuYQzY046Jo9ARxfPZxwaNSkWV
 
 ## Run Locally

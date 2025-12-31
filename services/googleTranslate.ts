@@ -6,10 +6,31 @@ export const translateWithGoogleFree = async (text: string, targetLang: string =
   if (!text || !text.trim()) return "";
 
   try {
-    // Mapping tên ngôn ngữ sang mã ISO mà Google hiểu
-    const langCode = targetLang.toLowerCase().includes("viet") ? "vi" 
-                   : targetLang.toLowerCase().includes("eng") ? "en" 
-                   : "vi"; // Mặc định là Việt Nam
+    // Mapping tên ngôn ngữ sang mã ISO 639-1 mà Google Translate hiểu
+    const langMap: Record<string, string> = {
+      'vietnamese': 'vi',
+      'english': 'en',
+      'chinese': 'zh',
+      'japanese': 'ja',
+      'korean': 'ko',
+      'spanish': 'es',
+      'french': 'fr',
+      'german': 'de',
+      'russian': 'ru',
+      'thai': 'th',
+      'indonesian': 'id',
+    };
+
+    // Tìm language code
+    const lowerTarget = targetLang.toLowerCase();
+    let langCode = 'vi'; // Default Vietnamese
+
+    for (const [lang, code] of Object.entries(langMap)) {
+      if (lowerTarget.includes(lang)) {
+        langCode = code;
+        break;
+      }
+    }
 
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${langCode}&dt=t&q=${encodeURIComponent(text)}`;
 
